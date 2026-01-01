@@ -5,13 +5,13 @@ import * as Yup from 'yup';
 
 import css from './NoteForm.module.css';
 import type { NotePost } from '../../types/note';
-import { createNote } from '../../lib/api';
+import { createNote } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 const initialFormValues: NotePost = {
   title: '',
   content: '',
-  tag: 'Todo'
+  tag: 'Todo',
 };
 
 const OrderSchema = Yup.object().shape({
