@@ -1,38 +1,86 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { useParams } from 'next/navigation';
-import { fetchNoteById } from '@/lib/api';
+import { useState, useEffect } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useDebouncedCallback } from 'use-debounce';
+import toast, { Toaster } from 'react-hot-toast';
+import { fetchNotes, NotesHttpResponse } from '@/lib/api';
+
 import css from './NotesPage.module.css';
 
-const NoteDetailsClient = () => {
-  const { id } = useParams<{ id: string }>();
+import NoteList from '@/components/NoteList/NoteList';
+import ErrorMessage from '@/components/ErrorMessage/ErrorMessage';
+import Loader from '@/components/Loader/Loader';
+import Pagination from '@/components/Pagination/Pagination';
+import Modal from '@/components/Modal/Modal';
+import NoteForm from '@/components/NoteForm/NoteForm';
+import SearchBox from '@/components/SearchBox/SearchBox';
 
-  const {
-    data: note,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['note', id],
-    queryFn: () => fetchNoteById(id),
+export default function AppClient() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  const saveDebouncedQuery = useDebouncedCallback((query: string) => {
+    setDebouncedQuery(query);
+  }, 300);
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(event.target.value);
+    saveDebouncedQuery(event.target.value);
+    setCurrentPage(1);
+  };
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
+
+  const { data, isLoading, isError, isSuccess } = useQuery<NotesHttpResponse>({
+    queryKey: ['notes', { query: debouncedQuery, page: currentPage }],
+    queryFn: () => fetchNotes(debouncedQuery, currentPage),
+    placeholderData: keepPreviousData,
     refetchOnMount: false,
   });
 
-  if (isLoading) return <p>Loading, please wait...</p>;
+  const totalPages = data?.totalPages ?? 0;
 
-  if (error || !note) return <p>Something went wrong.</p>;
+  useEffect(() => {
+    if (isSuccess && data?.notes.length === 0) {
+      toast.error('No notes found for your request.');
+    }
+  }, [isSuccess, data]);
 
   return (
-    <div className={css.container}>
-      <div className={css.item}>
-        <div className={css.header}>
-          <h2>{note.title}</h2>
-        </div>
-        <p className={css.content}>{note.content}</p>
-        <p className={css.date}>{note.createdAt}</p>
+    <>
+      <div className={css.app}>
+        <header className={css.toolbar}>
+          {<SearchBox searchQuery={query} onChange={handleChange} />}
+          {isSuccess && totalPages > 1 && (
+            <Pagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
+          )}
+          {
+            <button className={css.button} onClick={openModal}>
+              Create note +
+            </button>
+          }
+        </header>
+        {isModalOpen && (
+          <Modal onClose={closeModal}>
+            <NoteForm onClose={closeModal} />
+          </Modal>
+        )}
+        {isError ? (
+          <ErrorMessage />
+        ) : (
+          data && data.notes.length > 0 && <NoteList notes={data.notes} />
+        )}
+        {isLoading && <Loader />}
       </div>
-    </div>
+      <Toaster />
+    </>
   );
-};
-
-export default NoteDetailsClient;
+}
