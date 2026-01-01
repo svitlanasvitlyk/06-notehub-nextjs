@@ -1,4 +1,6 @@
-import { Note } from "@/lib/api";
+/*import { Note } from "@/lib/api";*/
+
+import type { Note } from "@/types/note";
 
 interface NoteItemProps{
   item: Note;
