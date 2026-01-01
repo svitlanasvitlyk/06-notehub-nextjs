@@ -1,5 +1,6 @@
 import {
   QueryClient,
+  QueryClientProvider,
   HydrationBoundary,
   dehydrate,
 } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import { fetchNotes } from '@/lib/api';
 
 export default async function App() {
   const queryClient = new QueryClient();
+
   await queryClient.prefetchQuery({
     queryKey: ['notes', { query: '', page: 1 }],
     queryFn: () => fetchNotes('', 1),
@@ -16,9 +18,11 @@ export default async function App() {
 
   return (
     <div className={css.app}>
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <AppClient />
-      </HydrationBoundary>
+      <QueryClientProvider client={queryClient}>
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          <AppClient />
+        </HydrationBoundary>
+      </QueryClientProvider>
     </div>
   );
 }
