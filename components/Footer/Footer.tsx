@@ -1,4 +1,4 @@
-import css from './Header.module.css';
+import css from './Footer.module.css';
 import Link from 'next/link';
 
 
