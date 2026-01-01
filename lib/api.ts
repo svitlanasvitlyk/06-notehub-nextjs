@@ -1,8 +1,6 @@
 import axios from 'axios';
 import type { Note, NotePost } from '../types/note';
 
-
-
 export type NoteId = Note['id'];
 
 export interface NotesHttpResponse {
